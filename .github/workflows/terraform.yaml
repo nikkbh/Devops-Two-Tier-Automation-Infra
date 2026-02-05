@@ -28,6 +28,8 @@ jobs:
         working-directory: ./infra/terraform/vnet-deployment
     name: Terraform Plan
     runs-on: ubuntu-latest
+    environment: development
+    if: github.event_name != 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -160,10 +162,10 @@ jobs:
             })
 
   terraform-apply:
-    needs: terraform-plan
     name: Terraform Apply
     runs-on: ubuntu-latest
     environment: development
+    if: github.event_name == 'workflow_dispatch'
     defaults:
       run:
         working-directory: ./infra/terraform/vnet-deployment
