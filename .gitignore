@@ -35,3 +35,10 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+infra/terraform/github-deployment/tfplan
+
+# Allow .tfvars files that live inside any `tfvars/` directory while
+# still ignoring other `*.tfvars` files (e.g., local secrets).
+!**/tfvars/
+!**/tfvars/*.tfvars
+!**/tfvars/*.tfvars.json
