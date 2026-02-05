@@ -163,7 +163,7 @@ jobs:
     needs: terraform-plan
     name: Terraform Apply
     runs-on: ubuntu-latest
-    environment: dev
+    environment: development
     defaults:
       run:
         working-directory: ./infra/terraform/vnet-deployment
