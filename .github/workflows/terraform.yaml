@@ -91,6 +91,7 @@ jobs:
           path: ./infra/terraform/vnet-deployment/main.tfplan
 
       - name: Update Pull Request
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v6
         env:
           PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
