@@ -61,7 +61,7 @@ module "acr" {
   rg_name                   = module.rg.name
   user_assigned_identity_id = module.user_assigned_identity.user_assigned_identity_id
   tags                      = var.tags
-  sku                       = var.acr_name
+  sku                       = var.sku
   admin_enabled             = var.admin_enabled
 }
 
