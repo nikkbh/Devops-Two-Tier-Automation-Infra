@@ -1,4 +1,4 @@
-name: Deploy Virutal Network & Subnet
+name: Deploy Virtual Network & Subnet
 on:
   push:
     branches:
@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     # allow runs on push, pull_request and manual dispatch
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -85,10 +86,11 @@ jobs:
           fi
 
       - name: Publish Terraform Plan
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          path: ./infra/terraform/vnet-deployment/main.tfplan
+          path: main.tfplan
 
       - name: Update Pull Request
         if: github.event_name == 'pull_request'
@@ -166,6 +168,7 @@ jobs:
     name: Terraform Apply
     runs-on: ubuntu-latest
     environment: development
+    needs: terraform-plan
     if: github.ref == 'refs/heads/main'
     defaults:
       run:
@@ -173,17 +176,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         id: init
@@ -193,7 +196,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tfplan
-          path: ./infra/terraform/vnet-deployment
-
+          path: .
       - name: Terraform Apply
         run: terraform apply -auto-approve "./main.tfplan"
