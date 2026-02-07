@@ -1,4 +1,4 @@
-# Devops Two-Tier Automation Infrastructure
+# Devops Two-Tier Infra Automation | Azure, Terraform & Ansible
 
 ![Terraform](https://img.shields.io/badge/Terraform-v1.0+-blue?logo=terraform)
 ![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoft-azure)
