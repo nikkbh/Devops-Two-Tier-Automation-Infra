@@ -13,11 +13,6 @@ variable "location" {
   type        = string
 }
 
-variable "prefix" {
-  description = "Prefix name for VM"
-  type        = string
-}
-
 variable "nic_id" {
   description = "NIC ID to be attached to this VM"
   type        = string
