@@ -31,7 +31,7 @@ module "nic" {
   source    = "../modules/network-interface-card"
   name      = var.nic_name
   location  = var.location
-  rg        = module.rg
+  rg        = module.rg.name
   subnet_id = data.terraform_remote_state.networking.outputs.subnet_id
 }
 
@@ -59,7 +59,7 @@ module "acr" {
   name                      = var.acr_name
   location                  = var.location
   rg_name                   = module.rg.name
-  user_assigned_identity_id = module.user_assigned_identity
+  user_assigned_identity_id = module.user_assigned_identity.id
   tags                      = var.tags
   sku                       = var.acr_name
   admin_enabled             = var.admin_enabled
@@ -67,14 +67,14 @@ module "acr" {
 
 module "acr_pull_role" {
   source       = "../modules/role-assignment"
-  principal_id = module.user_assigned_identity.user_assinged_identity_principal_id
+  principal_id = module.user_assigned_identity.user_assigned_identity_principal_id
   role_name    = var.acr_pull_role_name
   scope_id     = module.acr.acr_id
 }
 
 module "network_contributor_role" {
   source       = "../modules/role-assignment"
-  principal_id = module.user_assigned_identity.user_assinged_identity_principal_id
+  principal_id = module.user_assigned_identity.user_assigned_identity_principal_id
   role_name    = var.network_contributor_role_name
   scope_id     = module.rg.id
 }
