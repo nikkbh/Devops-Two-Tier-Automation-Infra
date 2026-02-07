@@ -29,7 +29,7 @@ jobs:
     name: Terraform Plan
     runs-on: ubuntu-latest
     environment: development
-    if: github.event_name != 'workflow_dispatch'
+    # allow runs on push, pull_request and manual dispatch
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -76,7 +76,7 @@ jobs:
 
           echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
 
-          if [ $exitcode -eq 1 ]; then
+          if [ $exitcode -ne 0 ]; then
             echo "Error: Terraform plan failed"
             exit 1
           else
