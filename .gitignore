@@ -42,3 +42,5 @@ infra/terraform/github-deployment/tfplan
 !**/tfvars/
 !**/tfvars/*.tfvars
 !**/tfvars/*.tfvars.json
+
+deployment-*.yaml
