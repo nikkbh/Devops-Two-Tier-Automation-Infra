@@ -29,3 +29,9 @@ provider "azurerm" {
   tenant_id       = var.tenant_id
   subscription_id = var.subscription_id
 }
+
+provider "azapi" {
+  use_oidc = true
+}
+
+data "azurerm_client_config" "current" {}

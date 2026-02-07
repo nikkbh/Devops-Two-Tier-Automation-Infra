@@ -8,20 +8,21 @@ data "terraform_remote_state" "networking" {
   }
 }
 
-# uami
-module "user_assigned_identity" {
-  source   = "../modules/user-assigned-identity"
-  name     = var.user_assigned_identity_name
-  location = var.location
-  rg_name  = module.resource-group.name
-  tags     = var.tags
-}
 
 # rg
 module "rg" {
   source   = "../modules/resource-group"
   name     = var.rg
   location = var.location
+  tags     = var.tags
+}
+
+# uami
+module "user_assigned_identity" {
+  source   = "../modules/user-assigned-identity"
+  name     = var.user_assigned_identity_name
+  location = var.location
+  rg_name  = module.rg.name
   tags     = var.tags
 }
 
@@ -48,7 +49,7 @@ module "vm" {
   prefix              = var.prefix
   location            = var.location
   nic_id              = module.nic.nic_id
-  resource_group_name = module.rg
+  resource_group_name = module.rg.name
   ssh_key             = module.ssh-key.key_data
 }
 
