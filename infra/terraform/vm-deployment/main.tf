@@ -59,7 +59,7 @@ module "acr" {
   name                      = var.acr_name
   location                  = var.location
   rg_name                   = module.rg.name
-  user_assigned_identity_id = module.user_assigned_identity.id
+  user_assigned_identity_id = module.user_assigned_identity.user_assigned_identity_id
   tags                      = var.tags
   sku                       = var.acr_name
   admin_enabled             = var.admin_enabled
