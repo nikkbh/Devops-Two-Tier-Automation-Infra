@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - "infra/terraform/vnet-deployment/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
