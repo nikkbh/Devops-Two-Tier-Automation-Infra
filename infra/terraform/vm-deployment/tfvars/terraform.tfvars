@@ -13,5 +13,6 @@ tf_container_name       = "tftwotierappcontaienr"
 
 nic_name                    = "twotierapp-nic"
 prefix                      = "towtierapp"
-acr_name                    = "twotierapp-acr"
+acr_name                    = "twotierappacr"
+sku                         = "Standard"
 user_assigned_identity_name = "UAMI_VM"
