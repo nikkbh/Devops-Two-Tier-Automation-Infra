@@ -90,7 +90,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          path: main.tfplan
+          path: ./infra/terraform/vnet-deployment/main.tfplan
 
       - name: Update Pull Request
         if: github.event_name == 'pull_request'
