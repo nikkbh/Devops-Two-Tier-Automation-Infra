@@ -94,3 +94,8 @@ variable "network_contributor_role_name" {
   description = "The name of the Network Contributor role given to the user-assigned identity"
   default     = "Network Contributor"
 }
+
+variable "vm_ssh_public_key" {
+  type        = string
+  description = "File path of the SSH Public Key"
+}

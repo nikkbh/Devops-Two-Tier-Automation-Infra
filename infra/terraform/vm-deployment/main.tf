@@ -50,7 +50,7 @@ module "vm" {
   location            = var.location
   nic_id              = module.nic.nic_id
   resource_group_name = module.rg.name
-  ssh_key             = module.ssh-key.key_data
+  ssh_key             = var.vm_ssh_public_key
 }
 
 # acr
