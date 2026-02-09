@@ -180,6 +180,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tfplan
-          path: .
+          path: ./infra/terraform/vnet-deployment
       - name: Terraform Apply
         run: terraform apply -auto-approve "./main.tfplan"
