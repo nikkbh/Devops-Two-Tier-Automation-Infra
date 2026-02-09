@@ -26,6 +26,18 @@ module "user_assigned_identity" {
   tags     = var.tags
 }
 
+# nsg
+module "nsg" {
+  source   = "../modules/network-security-group"
+  location = var.location
+  rg       = module.rg.name
+}
+
+resource "azurerm_network_interface_security_group_association" "nsg-nic" {
+  network_interface_id      = module.nic.nic_id
+  network_security_group_id = module.nsg.nsg-id
+}
+
 # nic (remove from vnet deployment)
 module "nic" {
   source    = "../modules/network-interface-card"
