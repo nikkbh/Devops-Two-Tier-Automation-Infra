@@ -34,6 +34,24 @@ module "gh_usi" {
   tags     = var.tags
 }
 
+module "gh_uami_cicd" {
+  source   = "../modules/user-assigned-identity"
+  name     = var.gh_uami_cicd
+  location = var.location
+  rg_name  = module.identity-resource-group.name
+  tags     = var.tags
+}
+
+module "gh_federated_credential_cicd" {
+  source                             = "../modules/federated-identity-credential"
+  federated_identity_credential_name = "${var.github_organization_target}-${var.github_repository_app}"
+  rg_name                            = module.identity-resource-group.name
+  user_assigned_identity_id          = module.gh_uami_cicd.user_assigned_identity_id
+  subject                            = "repo:${var.github_organization_target}/${var.github_repository_app}:environment:${var.environment}"
+  audience_name                      = local.default_audience_name
+  issuer_url                         = local.github_issuer_url
+}
+
 module "gh_federated_credential" {
   source                             = "../modules/federated-identity-credential"
   federated_identity_credential_name = "${var.github_organization_target}-${var.github_repository}-${var.environment}"
@@ -67,3 +85,25 @@ module "sub_owner_role_assignment" {
   role_name    = var.owner_role_name
   scope_id     = data.azurerm_subscription.sub.id
 }
+
+module "acr_pull_role_assignment" {
+  source       = "../modules/role-assignment"
+  principal_id = module.gh_uami_cicd.user_assigned_identity_principal_id
+  role_name    = "AcrPull"
+  scope_id     = data.azurerm_subscription.sub.id
+}
+
+module "acr_push_role_assignment" {
+  source       = "../modules/role-assignment"
+  principal_id = module.gh_uami_cicd.user_assigned_identity_principal_id
+  role_name    = "AcrPush"
+  scope_id     = data.azurerm_subscription.sub.id
+}
+
+module "vm_contributor_role_assignment" {
+  source       = "../modules/role-assignment"
+  principal_id = module.gh_uami_cicd.user_assigned_identity_principal_id
+  role_name    = "Virtual Machine Contributor"
+  scope_id     = data.azurerm_subscription.sub.id
+}
+

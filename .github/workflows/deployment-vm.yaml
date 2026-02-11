@@ -197,39 +197,39 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve "./main.tfplan"
 
-    terraform-destroy:
-      name: Terraform destroy
-      runs-on: ubuntu-latest
-      environment: development
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
-      defaults:
-        run:
-          working-directory: ./infra/terraform/vm-deployment
+  terraform-destroy:
+    name: Terraform destroy
+    runs-on: ubuntu-latest
+    environment: development
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+    defaults:
+      run:
+        working-directory: ./infra/terraform/vm-deployment
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Azure Login
-          uses: azure/login@v2
-          with:
-            client-id: ${{ secrets.AZURE_CLIENT_ID }}
-            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-        - name: Setup Terraform
-          uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-        - name: Terraform Init
-          id: init
-          run: terraform init -backend-config="resource_group_name=${{secrets.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" -backend-config="storage_account_name=${{secrets.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" -backend-config="container_name=${{secrets.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}"
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend-config="resource_group_name=${{secrets.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" -backend-config="storage_account_name=${{secrets.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" -backend-config="container_name=${{secrets.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}"
 
-        - name: Terraform Destroy
-          run: |
-            terraform destroy -auto-approve \
-              -var-file="./tfvars/terraform.tfvars" \
-              -var="azure_object_id=${{ secrets.AZURE_OBJECT_ID }}" \
-              -var="client_id=${{ secrets.AZURE_CLIENT_ID }}" \
-              -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
-              -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
-              -var="vm_ssh_public_key=${{ secrets.VM_SSH_PUBLIC_KEY }}"
+      - name: Terraform Destroy
+        run: |
+          terraform destroy -auto-approve \
+            -var-file="./tfvars/terraform.tfvars" \
+            -var="azure_object_id=${{ secrets.AZURE_OBJECT_ID }}" \
+            -var="client_id=${{ secrets.AZURE_CLIENT_ID }}" \
+            -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
+            -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+            -var="vm_ssh_public_key=${{ secrets.VM_SSH_PUBLIC_KEY }}"

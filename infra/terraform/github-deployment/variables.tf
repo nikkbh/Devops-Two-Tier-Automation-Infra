@@ -65,3 +65,13 @@ variable "owner_role_name" {
   description = "The name of the Owner role given to the user-assigned identity"
 }
 
+variable "gh_uami_cicd" {
+  description = "The name of the user-assigned managed identity that's used for GitHub Actions"
+  type        = string
+}
+
+variable "github_repository_app" {
+  type        = string
+  description = "The name of the GitHub repository to target"
+}
+

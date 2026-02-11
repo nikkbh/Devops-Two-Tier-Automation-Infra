@@ -5,6 +5,12 @@ resource "azurerm_linux_virtual_machine" "vm" {
   size                  = "Standard_F2"
   network_interface_ids = [var.nic_id]
   admin_username        = "adminuser"
+
+  identity {
+    type         = "UserAssigned"
+    identity_ids = var.uami_ids
+  }
+
   admin_ssh_key {
     username   = "adminuser"
     public_key = var.ssh_key

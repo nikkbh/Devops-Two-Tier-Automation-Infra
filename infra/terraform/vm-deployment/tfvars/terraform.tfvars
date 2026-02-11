@@ -16,3 +16,4 @@ prefix                      = "towtierapp"
 acr_name                    = "twotierappacr"
 sku                         = "Standard"
 user_assigned_identity_name = "UAMI_VM"
+uami_ids                    = ["/subscriptions/2132efef-e84d-44dd-b86b-43d935f59403/resourceGroups/uami-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/UAMI_GH_CICD"]

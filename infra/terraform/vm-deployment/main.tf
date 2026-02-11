@@ -63,8 +63,8 @@ module "vm" {
   nic_id              = module.nic.nic_id
   resource_group_name = module.rg.name
   ssh_key             = var.vm_ssh_public_key
+  uami_ids            = var.uami_ids
 }
-
 # acr
 module "acr" {
   source                    = "../modules/azure-container-registry"

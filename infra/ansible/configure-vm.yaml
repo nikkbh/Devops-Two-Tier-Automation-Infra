@@ -1,10 +1,7 @@
 - name: Configure Webservers
   hosts: webservers
   become: yes
-  tasks:
-    - name: Ping my hosts
-      ansible.builtin.ping:
-
-    - name: Print message
-      ansible.builtin.debug:
-        msg: Hello world
+  roles:
+    - docker_host
+  vars:
+    docker_user: "{{ ansible_ssh_user }}"
