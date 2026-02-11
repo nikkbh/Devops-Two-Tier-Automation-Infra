@@ -47,7 +47,7 @@ module "gh_federated_credential_cicd" {
   federated_identity_credential_name = "${var.github_organization_target}-${var.github_repository_app}"
   rg_name                            = module.identity-resource-group.name
   user_assigned_identity_id          = module.gh_uami_cicd.user_assigned_identity_id
-  subject                            = "repo:${var.github_organization_target}/${var.github_repository_app}:environment:${var.environment}"
+  subject                            = "repo:${var.github_organization_target}/${var.github_repository_app}:ref:refs/heads/main"
   audience_name                      = local.default_audience_name
   issuer_url                         = local.github_issuer_url
 }
