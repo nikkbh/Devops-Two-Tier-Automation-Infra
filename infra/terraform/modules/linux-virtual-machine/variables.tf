@@ -22,3 +22,8 @@ variable "ssh_key" {
   description = "Public SSH Key to be set to the VM"
   type        = string
 }
+
+variable "uami_ids" {
+  type        = list(string)
+  description = "List of UAMI IDs"
+}

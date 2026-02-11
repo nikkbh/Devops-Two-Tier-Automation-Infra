@@ -99,3 +99,8 @@ variable "vm_ssh_public_key" {
   type        = string
   description = "File path of the SSH Public Key"
 }
+
+variable "uami_ids" {
+  type        = list(string)
+  description = "List of UAMI Ids to be assigned to the VM"
+}

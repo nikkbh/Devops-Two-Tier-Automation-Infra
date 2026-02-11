@@ -1,0 +1,7 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for docker_host
+docker_compose_install: true # Enable docker-compose-plugin
+docker_python_sdk: true # Install docker Python SDK
+docker_user: "{{ ansible_user }}" # User to add to docker group (e.g., your SSH user)
+docker_edition: "ce" # Docker CE

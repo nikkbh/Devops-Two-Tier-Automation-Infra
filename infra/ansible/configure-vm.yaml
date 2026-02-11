@@ -1,0 +1,7 @@
+- name: Configure Webservers
+  hosts: webservers
+  become: yes
+  roles:
+    - docker_host
+  vars:
+    docker_user: "{{ ansible_ssh_user }}"
