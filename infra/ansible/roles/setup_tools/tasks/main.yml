@@ -1,0 +1,71 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Install prerequisites
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+    - name: Install packages
+      apt:
+        name:
+          - curl
+          - gnupg
+          - lsb-release
+          - ca-certificates
+          - git
+          - apt-transport-https
+        state: present
+
+- name: Install Azure CLI
+  block:
+    - name: Download Azure CLI GPG key
+      get_url:
+        url: https://packages.microsoft.com/keys/msopentech.asc
+        dest: /tmp/msopentech.asc
+      delegate_to: localhost
+
+    - name: Add Azure CLI GPG key
+      apt_key:
+        file: /tmp/msopentech.asc
+        state: present
+
+    - name: Add Azure CLI repo
+      apt_repository:
+        repo: "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install Azure CLI
+      apt:
+        name: "{{ azure_cli_package }}"
+        state: present
+        update_cache: yes
+
+- name: Create app directory
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Clone/update Git repo
+  git:
+    repo: "{{ git_repo_url }}"
+    dest: "{{ app_dir }}"
+    version: "{{ git_version }}"
+    update: yes
+    force: no
+    accept_hostkey: yes
+  register: git_result
+  notify: git updated
+
+- name: Verify docker-compose.yaml exists
+  stat:
+    path: "{{ app_dir }}/docker-compose.yaml"
+  register: compose_file
+
+- name: Fail if docker-compose.yaml missing
+  fail:
+    msg: "docker-compose.yaml not found at {{ app_dir }}. Check git_repo_url."
+  when: not compose_file.stat.exists

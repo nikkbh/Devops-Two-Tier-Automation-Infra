@@ -1,11 +1,11 @@
-# Devops Two-Tier Infra Automation | Azure, Terraform & Ansible
+# Two Tier Infra Automation Pipeline | Azure, Terraform & Ansible
 
 ![Terraform](https://img.shields.io/badge/Terraform-v1.0+-blue?logo=terraform)
 ![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoft-azure)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2671E5?logo=github-actions)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-A production-ready Infrastructure-as-Code (IaC) project for deploying a two-tier application infrastructure on Microsoft Azure using Terraform and Ansible. This project implements secure OIDC-based authentication with Azure through GitHub Actions for automated CI/CD deployments.
+A production-ready Infrastructure-as-Code (IaC) project for deploying a two-tier application infrastructure on Microsoft Azure using Terraform and Ansible. This project implements secure OIDC-based authentication with Azure through GitHub Actions for automated CI/CD deployments. Includes configuration management through Ansible roles for Docker host setup and application deployment tools.
 
 ## Table of Contents
 
@@ -61,28 +61,115 @@ The infrastructure creates the following Azure resources:
 ### Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     GitHub Actions                          │
-├─────────────────────────────────────────────────────────────┤
-│  On Push/PR → terraform plan                                │
-│  On workflow_dispatch → terraform apply                      │
-└────────────────────┬────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                        Azure Subscription                                           │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│  ┌────────────────────────────────────────────────┐   ┌─────────────────────────┐  │
+│  │   Resource Group (Main)                        │   │ State Backend RG        │  │
+│  │  ┌────────────────────────────────────────────┐│   │  ┌──────────────────┐   │  │
+│  │  │  Virtual Network (10.0.0.0/16)           ││   │  │ Storage Account  │   │  │
+│  │  │  ┌──────────────────────────────────────┐ ││   │  │ (tfstate)        │   │  │
+│  │  │  │ Subnet (10.0.1.0/24)                 │ ││   │  └──────────────────┘   │  │
+│  │  │  │  ┌──────────────────────────────────┐│ ││   │                         │  │
+│  │  │  │  │ Virtual Machine                  │ ││   │                         │  │
+│  │  │  │  │ (Docker Host)                    │ ││   │                         │  │
+│  │  │  │  │ - Docker & Compose               │ ││   │                         │  │
+│  │  │  │  │ - Azure CLI                      │ ││   │                         │  │
+│  │  │  │  │ - Application                    │ ││   │                         │  │
+│  │  │  │  └──────────────────────────────────┘│ ││   │                         │  │
+│  │  │  └──────────────────────────────────────┘ ││   │                         │  │
+│  │  └────────────────────────────────────────────┘│   │                         │  │
+│  │                                                 │   └─────────────────────────┘  │
+│  │  ┌───────────────────────────────────────────┐ │                                │
+│  │  │ User-Assigned Managed Identity           │ │                                │
+│  │  │ (GitHub OIDC Authentication)             │ │                                │
+│  │  └───────────────────────────────────────────┘ │                                │
+│  └────────────────────────────────────────────────┘                                │
+│         ↑                                                                           │
+│         │ OIDC Token                                                               │
+│         │                                                                          │
+├─────────┼──────────────────────────────────────────────────────────────────────────┤
+│         │                                                                          │
+│         │                                                                          │
+└─────────┼──────────────────────────────────────────────────────────────────────────┘
+          │
+          │
+┌─────────┴──────────────────────────────────────────────────────────────────────────┐
+│                    GitHub Actions Workflow                                         │
+│  • terraform plan (on PR/push)                                                     │
+│  • terraform apply (on workflow_dispatch)                                          │
+│  • Ansible provisioning (post-infrastructure)                                      │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Pipeline Flow
+
+```
+┌──────────────────────────────────────┐
+│   Developer Pushes Changes to Git    │
+└────────────────┬─────────────────────┘
+                 │
+                 ↓
+┌──────────────────────────────────────────────────┐
+│  GitHub Actions Triggers                         │
+│  (Pull Request or Push to Main)                  │
+└────────────────┬───────────────────────────────┘
+                 │
+                 ↓
+┌──────────────────────────────────────────────────┐
+│  Terraform Format & Validate                     │
+│  Security Scan (tfsec)                           │
+└────────────────┬───────────────────────────────┘
+                 │
+                 ↓
+┌──────────────────────────────────────────────────┐
+│  Terraform Plan                                  │
+│  (Preview infrastructure changes)                │
+└────────────────┬───────────────────────────────┘
+                 │
+                 ↓
+┌──────────────────────────────────────────────────┐
+│  Plan Artifact Stored                            │
+│  Comment Posted to PR                            │
+└────────────────┬───────────────────────────────┘
+                 │
+                 ↓
+    ┌────────────────────────────────┐
+    │  PR Approved & Merged to Main   │
+    └────────────────┬───────────────┘
                      │
-                     │ OIDC Token
                      ↓
-┌─────────────────────────────────────────────────────────────┐
-│              Azure Federated Identity                        │
-│  (Trust GitHub via OIDC Issuer)                            │
-└────────────┬──────────────────────────────────────────────┘
-             │
-             ↓
-┌─────────────────────────────────────────────────────────────┐
-│        User-Assigned Managed Identity                        │
-│  (Impersonated for Azure Authentication)                   │
-└────────────┬──────────────────────────────────────────────┘
-             │
-             ├─→ Storage Account (tfstate)
-             └─→ Subscription (for deployments)
+┌──────────────────────────────────────────────────┐
+│  Manual Trigger: workflow_dispatch               │
+│  (Deploy Infrastructure)                         │
+└────────────────┬───────────────────────────────┘
+                 │
+                 ↓
+┌──────────────────────────────────────────────────┐
+│  Terraform Apply                                 │
+│  (Create/Update Azure Resources)                 │
+└────────────────┬───────────────────────────────┘
+                 │
+                 ↓
+┌──────────────────────────────────────────────────┐
+│  OIDC Authentication                             │
+│  (GitHub → Azure Federated Identity)             │
+└────────────────┬───────────────────────────────┘
+                 │
+                 ↓
+┌──────────────────────────────────────────────────┐
+│  Ansible Configuration Management                │
+│  • Docker host setup                             │
+│  • Install tools & Azure CLI                     │
+│  • Clone application repository                  │
+└────────────────┬───────────────────────────────┘
+                 │
+                 ↓
+┌──────────────────────────────────────────────────┐
+│  Infrastructure Ready!                           │
+│  Application deployed via docker-compose         │
+└──────────────────────────────────────────────────┘
 ```
 
 ## Features
@@ -104,6 +191,13 @@ The infrastructure creates the following Azure resources:
 - Modular Terraform design with reusable modules
 - Clear separation of concerns
 - Remote state management in Azure Storage
+
+✅ **Configuration Management**
+
+- Ansible roles for Docker host setup (`docker_host`)
+- Application deployment tools setup (`setup_tools`)
+- Automated Azure CLI installation
+- Git repository cloning and deployment
 
 ✅ **Code Quality**
 
@@ -146,16 +240,33 @@ The infrastructure creates the following Azure resources:
 ## Directory Structure
 
 ```
-Devops-Two-Tier-Automation-Infra/
+Two-Tier-Infra-Automation-Pipeline/
 ├── README.md                          # This file
 ├── .github/
 │   └── workflows/
 │       └── terraform.yaml             # GitHub Actions CI/CD workflow
 ├── infra/
 │   ├── ansible/                       # Configuration management
-│   │   ├── configure-vm.yaml          # VM configuration playbook
-│   │   └── inventory.ini              # Ansible inventory
-│   └── terraform/
+│   │   ├── ansible.cfg                # Ansible configuration
+│   │   ├── configure-vm.yaml          # VM configuration playbook (roles: docker_host, setup_tools)
+│   │   ├── inventory.ini              # Ansible inventory
+│   │   └── roles/
+│   │       ├── docker_host/           # Role for Docker installation & configuration
+│   │       │   ├── README.md
+│   │       │   ├── defaults/main.yml
+│   │       │   ├── handlers/main.yml
+│   │       │   ├── meta/main.yml
+│   │       │   ├── tasks/main.yml
+│   │       │   ├── tests/
+│   │       │   └── vars/main.yml
+│   │       └── setup_tools/           # Role for tools setup & app deployment
+│   │           ├── README.md
+│   │           ├── defaults/main.yml  # Git repo, app directory, Azure CLI config
+│   │           ├── handlers/main.yml
+│   │           ├── meta/main.yml
+│   │           ├── tasks/main.yml     # Install prerequisites, Azure CLI, clone repo
+│   │           ├── tests/
+│   │           └── vars/main.yml
 │       ├── github-deployment/         # GitHub OIDC setup & state backend
 │       │   ├── main.tf                # OIDC resources & storage account
 │       │   ├── variables.tf           # Input variables
@@ -207,13 +318,15 @@ Devops-Two-Tier-Automation-Infra/
 
 ### Key Directories Explained
 
-| Directory                            | Purpose                                                                     |
-| ------------------------------------ | --------------------------------------------------------------------------- |
-| `infra/terraform/vnet-deployment/`   | Main infrastructure deployment (VNet, Subnets) - this is deployed via CI/CD |
-| `infra/terraform/github-deployment/` | One-time setup for GitHub OIDC & state backend - typically run manually     |
-| `infra/terraform/modules/`           | Reusable Terraform modules used by both deployments                         |
-| `infra/ansible/`                     | Configuration management and VM provisioning playbooks                      |
-| `.github/workflows/`                 | GitHub Actions CI/CD pipeline definitions                                   |
+| Directory                            | Purpose                                                                 |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| `infra/terraform/vnet-deployment/`   | Main infrastructure deployment (VNet, Subnets) - deployed via CI/CD     |
+| `infra/terraform/github-deployment/` | One-time setup for GitHub OIDC & state backend - typically run manually |
+| `infra/terraform/modules/`           | Reusable Terraform modules used by both deployments                     |
+| `infra/ansible/`                     | Configuration management: Docker setup & app deployment tools           |
+| `infra/ansible/roles/docker_host/`   | Ansible role for Docker installation and configuration                  |
+| `infra/ansible/roles/setup_tools/`   | Ansible role for Azure CLI, git, and application deployment setup       |
+| `.github/workflows/`                 | GitHub Actions CI/CD pipeline definitions                               |
 
 ## Getting Started
 
@@ -269,7 +382,7 @@ az identity create --resource-group <rg-name> --name github-oidc-identity
 
 ### Step 4: Bootstrap GitHub Deployment (One-Time Setup)
 
-The `github-deployment` configuration must be applied first to set up the OIDC infrastructure:
+The `github-deployment` configuration must be applied first to set up the OIDC infrastructure and state backend:
 
 ```bash
 cd infra/terraform/github-deployment
@@ -295,9 +408,25 @@ terraform apply -var-file="terraform.tfvars.local"
 # Note the outputs (especially the User Assigned Identity ID)
 ```
 
-### Step 5: Deploy VNet Infrastructure
+### Step 5: Deploy VNet Infrastructure via GitHub Actions
 
-Once GitHub deployment is complete, deploy the main VNet:
+Once GitHub deployment is complete, the main VNet deployment is automated via GitHub Actions. However, you can also deploy locally:
+
+**For GitHub Actions Deployment (Recommended):**
+
+```bash
+# 1. Push changes to the repository
+git add .
+git commit -m "Update infrastructure configuration"
+git push origin main
+
+# 2. GitHub Actions automatically runs terraform plan
+# 3. Go to Actions tab and manually trigger workflow_dispatch to apply
+```
+
+**For Local Deployment:**
+
+If you need to deploy locally:
 
 ```bash
 cd ../vnet-deployment
@@ -314,9 +443,33 @@ vim tfvars/terraform.tfvars
 # Plan the deployment
 terraform plan -var-file="./tfvars/terraform.tfvars"
 
-# Apply (or trigger via GitHub Actions)
+# Apply the configuration
 terraform apply -var-file="./tfvars/terraform.tfvars"
 ```
+
+### Step 6: Configure Ansible for VM Provisioning
+
+After infrastructure is deployed, configure Ansible to provision the Docker host:
+
+```bash
+cd infra/ansible
+
+# Update inventory with your VM's IP address
+vim inventory.ini
+
+# Configure playbook variables
+vim configure-vm.yaml
+
+# Run the playbook to configure the VM
+ansible-playbook -i inventory.ini configure-vm.yaml -u azureuser --private-key ~/.ssh/azure_key.pem
+```
+
+This playbook will:
+
+- Install Docker and Docker Compose
+- Install Azure CLI
+- Clone the application repository
+- Prepare the host for running containerized applications
 
 ## GitHub Actions Workflow
 
@@ -371,14 +524,16 @@ on:
 
 ### Workflow Features
 
-| Feature                 | Description                                           |
-| ----------------------- | ----------------------------------------------------- |
-| **OIDC Authentication** | No credentials in secrets - uses federated identity   |
-| **Auto Plan on PR**     | Automatic review and comment on PRs with plan output  |
-| **Artifact Storage**    | Plan files stored as artifacts between plan and apply |
-| **Security Scanning**   | tfsec checks for security issues                      |
-| **Code Quality**        | Format and validation checks before plan              |
-| **PR Comments**         | Detailed plan output posted directly to PRs           |
+| Feature                  | Description                                           |
+| ------------------------ | ----------------------------------------------------- |
+| **OIDC Authentication**  | No credentials in secrets - uses federated identity   |
+| **Auto Plan on PR**      | Automatic review and comment on PRs with plan output  |
+| **Artifact Storage**     | Plan files stored as artifacts between plan and apply |
+| **Security Scanning**    | tfsec checks for security issues                      |
+| **Code Quality**         | Format and validation checks before plan              |
+| **PR Comments**          | Detailed plan output posted directly to PRs           |
+| **Multi-Stage Pipeline** | Plan, review, approve, apply workflow                 |
+| **State Management**     | Remote state in Azure Storage with locking            |
 
 ### Running the Workflow
 
@@ -484,8 +639,13 @@ All modules are located in `infra/terraform/modules/`. Each module is self-conta
 | `resource-group`                | Creates Azure Resource Groups   | `azurerm_resource_group`                               |
 | `virtual-network`               | Creates Virtual Networks        | `azurerm_virtual_network`                              |
 | `subnet`                        | Creates Subnets within VNets    | `azurerm_subnet`                                       |
+| `network-security-group`        | Manages NSG rules               | `azurerm_network_security_group`                       |
+| `network-interface-card`        | Creates NIC for VMs             | `azurerm_network_interface`                            |
+| `linux-virtual-machine`         | Deploys Linux VMs               | `azurerm_linux_virtual_machine`                        |
+| `ssh-key`                       | Manages SSH keys                | `azurerm_ssh_public_key`                               |
 | `user-assigned-identity`        | Creates managed identities      | `azurerm_user_assigned_identity`                       |
 | `federated-identity-credential` | Sets up OIDC trust              | `azurerm_federated_identity_credential`                |
+| `azure-container-registry`      | Creates container registry      | `azurerm_container_registry`                           |
 | `tfstate-storage`               | Manages Terraform state storage | `azurerm_storage_account`, `azurerm_storage_container` |
 | `role-assignment`               | Assigns Azure RBAC roles        | `azurerm_role_assignment`                              |
 
@@ -614,10 +774,21 @@ location    = "centralindia"         # Azure region
 
 tags = {
   environment = "prod"
-  owner       = "nikhil"
+  owner       = "team-devops"
   application = "two-tier-app"
-  location    = "centralindia"
+  managed-by  = "terraform"
 }
+```
+
+#### Ansible Playbook Variables
+
+```yaml
+# infra/ansible/configure-vm.yaml
+
+vars:
+  docker_user: "azureuser" # VM user for Docker
+  setup_tools_git_repo_url: "https://github.com/nikkbh/DevOps-Two-Tier-Automation" # App repo
+  setup_tools_app_dir: "/opt/flask-app" # App deployment directory
 ```
 
 #### Common Customizations
@@ -660,27 +831,42 @@ module "subnet-3" {
 }
 ```
 
-**Modify Tags:**
+**Add More Subnets:**
 
-```hcl
-tags = {
-  environment = "staging"
-  owner       = "your-name"
-  application = "your-app"
-  costcenter  = "123456"
-  managed-by  = "terraform"
+```terraform
+module "subnet-2" {
+  source      = "../modules/subnet"
+  rg          = module.resource-group.name
+  vnet_name   = module.virtual-network.vnet_name
+  subnet_name = "subnet-database"
 }
+
+module "subnet-3" {
+  source      = "../modules/subnet"
+  rg          = module.resource-group.name
+  vnet_name   = module.virtual-network.vnet_name
+  subnet_name = "subnet-management"
+}
+```
+
+**Customize Git Repository for Ansible:**
+
+```yaml
+# infra/ansible/configure-vm.yaml
+vars:
+  setup_tools_git_repo_url: "https://github.com/your-org/your-app-repo"
+  setup_tools_app_dir: "/opt/your-app"
 ```
 
 ### Adding Resources
 
-To add new resources (e.g., Network Security Group):
+To add new resources (e.g., custom Network Security Group rules):
 
-1. **Create a new module:**
+1. **Create a new module** (or extend existing ones):
 
 ```bash
-mkdir infra/terraform/modules/network-security-group
-touch infra/terraform/modules/network-security-group/{main.tf,variables.tf,output.tf}
+mkdir infra/terraform/modules/network-security-group-custom
+touch infra/terraform/modules/network-security-group-custom/{main.tf,variables.tf,outputs.tf}
 ```
 
 2. **Define the module:**
@@ -706,15 +892,61 @@ resource "azurerm_network_security_group" "nsg" {
 }
 ```
 
-3. **Use in main.tf:**
+3. **Use in vnet-deployment/main.tf:**
 
 ```terraform
 module "nsg" {
-  source   = "../modules/network-security-group"
+  source   = "../modules/network-security-group-custom"
   name     = "nsg-app"
   rg_name  = module.resource-group.name
   location = var.location
 }
+```
+
+### Adding Ansible Roles
+
+To add new Ansible roles (e.g., for Kubernetes setup):
+
+```bash
+# Create new role
+ansible-galaxy init infra/ansible/roles/kubernetes-setup
+
+# Add role to playbook
+vim infra/ansible/configure-vm.yaml
+# Add: - kubernetes-setup
+
+# Define role tasks
+vim infra/ansible/roles/kubernetes-setup/tasks/main.yml
+```
+
+## Infrastructure Deployment Flow
+
+The complete deployment follows this sequence:
+
+```
+1. GitHub Actions Triggered (PR or Push)
+   ↓
+2. Terraform Format & Security Checks
+   ↓
+3. Terraform Plan (Preview changes)
+   ↓
+4. Artifact Stored & PR Comment Posted
+   ↓
+5. Manual Approval & Merge to Main
+   ↓
+6. Workflow Manual Trigger (workflow_dispatch)
+   ↓
+7. Terraform Apply (Create/Update Azure Resources)
+   ↓
+8. OIDC Authentication (GitHub → Azure)
+   ↓
+9. Infrastructure Created
+   ↓
+10. Ansible Playbook Execution
+    ├─ Docker Host Setup
+    ├─ Tools Installation
+    ├─ Repository Cloning
+    └─ Application Ready
 ```
 
 ## Troubleshooting
@@ -851,6 +1083,9 @@ This project welcomes contributions! Here are guidelines for contributing:
 ### Code Standards
 
 - **Terraform Code**: Run `terraform fmt` to format code
+  ```bash
+  terraform fmt -recursive infra/terraform/
+  ```
 - **Security**: Run `tfsec` to check for security issues
   ```bash
   tfsec infra/terraform/
@@ -859,6 +1094,10 @@ This project welcomes contributions! Here are guidelines for contributing:
   ```bash
   cd infra/terraform/vnet-deployment
   terraform validate
+  ```
+- **Ansible Code**: Validate playbooks with `ansible-playbook --syntax-check`
+  ```bash
+  ansible-playbook --syntax-check -i infra/ansible/inventory.ini infra/ansible/configure-vm.yaml
   ```
 
 ### Testing Changes
@@ -896,24 +1135,37 @@ This project welcomes contributions! Here are guidelines for contributing:
 
 ### Adding Features
 
-**New Module:**
+**New Terraform Module:**
 
 - Create module in `infra/terraform/modules/<new-module>`
-- Include variables.tf, main.tf, and output.tf
-- Document inputs and outputs
+- Include `variables.tf`, `main.tf`, and `outputs.tf`
+- Document inputs and outputs with descriptions
 - Test by calling from a deployment configuration
+- Add example usage in module comments
 
-**New Deployment:**
+**New Terraform Deployment:**
 
 - Create directory in `infra/terraform/<new-deployment>`
-- Include main.tf, variables.tf, providers.tf, outputs.tf
+- Include `main.tf`, `variables.tf`, `providers.tf`, `outputs.tf`
+- Create `tfvars/terraform.tfvars` for configuration
 - Add corresponding GitHub Actions workflow job if needed
+- Document deployment in README
 
-**New Ansible Playbooks:**
+**New Ansible Roles:**
+
+- Create role with: `ansible-galaxy init infra/ansible/roles/<new-role>`
+- Implement tasks in `tasks/main.yml`
+- Define variables in `defaults/main.yml`
+- Add handlers in `handlers/main.yml` if needed
+- Document role purpose in `README.md`
+- Test with: `ansible-playbook --check -i inventory.ini playbook.yml`
+
+**New Playbooks:**
 
 - Add to `infra/ansible/`
-- Document the playbook purpose
-- Test with inventory.ini
+- Include role references and variables
+- Document the playbook purpose in header
+- Test with `ansible-playbook --syntax-check`
 
 ### Reporting Issues
 
@@ -939,7 +1191,8 @@ For support and questions:
 
 ---
 
-**Last Updated**: February 2026  
+**Last Updated**: February 14, 2026  
 **Terraform Version**: 1.0+  
 **Azure Provider Version**: 3.0+  
+**Ansible Version**: 2.9+  
 **Status**: ✅ Production Ready
