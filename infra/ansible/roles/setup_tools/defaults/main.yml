@@ -1,0 +1,10 @@
+#SPDX-License-Identifier: MIT-0
+---
+# Configurable variables
+azure_cli_package: "azure-cli" # Ubuntu/Debian
+app_dir: "/opt/flask-app"
+git_repo_url: "https://github.com/nikkbh/DevOps-Two-Tier-Automation" # ← Override
+git_branch: "main"
+git_version: "{{ git_branch }}"
+az_login_subscription_id: "" # Optional
+

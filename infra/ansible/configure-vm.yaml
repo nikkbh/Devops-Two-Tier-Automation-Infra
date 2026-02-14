@@ -3,5 +3,8 @@
   become: yes
   roles:
     - docker_host
+    - setup_tools
   vars:
     docker_user: "{{ ansible_ssh_user }}"
+    setup_tools_git_repo_url: "https://github.com/nikkbh/DevOps-Two-Tier-Automation"
+    setup_tools_app_dir: "/opt/flask-app"
